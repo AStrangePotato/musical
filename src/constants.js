@@ -99,6 +99,19 @@ const audioLinks = {
   "Tones And I - Dance Monkey": "https://res.cloudinary.com/dy0urslke/video/upload/v1/audio_uploads/Tones%20And%20I%20-%20Dance%20Monkey",
   "ZAYN, Sia - Dusk Till Dawn (feat. Sia)": "https://res.cloudinary.com/dy0urslke/video/upload/v1/audio_uploads/ZAYN%2C%20Sia%20-%20Dusk%20Till%20Dawn%20%28feat.%20Sia%29",
 };
+const njLinks = {
+  "NewJeans - ASAP": "https://res.cloudinary.com/dy0urslke/video/upload/v1745292231/audio_uploads/NewJeans%20-%20ASAP",
+  "NewJeans - Attention": "https://res.cloudinary.com/dy0urslke/video/upload/v1745292236/audio_uploads/NewJeans%20-%20Attention",
+  "NewJeans - Cookie": "https://res.cloudinary.com/dy0urslke/video/upload/v1745292242/audio_uploads/NewJeans%20-%20Cookie",
+  "NewJeans - Cool With You": "https://res.cloudinary.com/dy0urslke/video/upload/v1745292247/audio_uploads/NewJeans%20-%20Cool%20With%20You",
+  "NewJeans - Ditto": "https://res.cloudinary.com/dy0urslke/video/upload/v1745292253/audio_uploads/NewJeans%20-%20Ditto",
+  "NewJeans - ETA": "https://res.cloudinary.com/dy0urslke/video/upload/v1745292259/audio_uploads/NewJeans%20-%20ETA",
+  "NewJeans - Get Up": "https://res.cloudinary.com/dy0urslke/video/upload/v1745292266/audio_uploads/NewJeans%20-%20Get%20Up",
+  "NewJeans - Hurt": "https://res.cloudinary.com/dy0urslke/video/upload/v1745292272/audio_uploads/NewJeans%20-%20Hurt",
+  "NewJeans - Hype Boy": "https://res.cloudinary.com/dy0urslke/video/upload/v1745292279/audio_uploads/NewJeans%20-%20Hype%20Boy",
+  "NewJeans - New Jeans": "https://res.cloudinary.com/dy0urslke/video/upload/v1745292286/audio_uploads/NewJeans%20-%20New%20Jeans",
+  "NewJeans - OMG": "https://res.cloudinary.com/dy0urslke/video/upload/v1745292292/audio_uploads/NewJeans%20-%20OMG",
+  "NewJeans - Super Shy": "https://res.cloudinary.com/dy0urslke/video/upload/v1745292298/audio_uploads/NewJeans%20-%20Super%20Shy",
+};
 
-
-export {audioLinks};
+export {audioLinks, njLinks};

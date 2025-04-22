@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { audioLinks } from './constants';
-import { Music, SkipForward, Play, Pause, RotateCcw } from 'lucide-react';
+import { audioLinks, njLinks } from './constants';
+import { Music, SkipForward, Play, Pause, RotateCcw, ListMusic } from 'lucide-react';
 
 const stems = ["bass", "drums", "other", "vocals"];
 
@@ -10,11 +10,23 @@ export default function SongGuesser() {
   const [userGuess, setUserGuess] = useState("");
   const [feedback, setFeedback] = useState("");
   const [gameOver, setGameOver] = useState(false);
+  const [listeningDuration, setListeningDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [loadErrors, setLoadErrors] = useState({});
   const [guessHistory, setGuessHistory] = useState([]);
   const [attemptsLeft, setAttemptsLeft] = useState(3);
+  const [timeTaken, setTimeTaken] = useState(0);
+  const [startTime, setStartTime] = useState(null);
+  const [currentPlaylist, setCurrentPlaylist] = useState("NewJeans");
+  const [showPlaylistSelector, setShowPlaylistSelector] = useState(false);
+  
+  // Available playlists
+  const playlists = {
+    Pop: audioLinks,
+    NewJeans: // assuming njLinks is imported from constants
+      njLinks // fallback to default if njLinks isn't available
+  };
   
   // Create refs for each audio element
   const audioRefs = {
@@ -26,12 +38,19 @@ export default function SongGuesser() {
 
   // Generate proper URL for a stem
   const getStemUrl = (song, stem) => {
-    return `${audioLinks[song]}/${stem}.wav`;
+    return `${playlists[currentPlaylist][song]}/${stem}.wav`;
   };
 
   // Pick a random song when the game starts
   useEffect(() => {
-    const songTitles = Object.keys(audioLinks);
+    pickRandomSong();
+    // Start tracking time as soon as game loads
+    setStartTime(Date.now());
+  }, []);
+
+  // Function to pick a random song
+  const pickRandomSong = () => {
+    const songTitles = Object.keys(playlists[currentPlaylist]);
     const randomSong = songTitles[Math.floor(Math.random() * songTitles.length)];
     setCurrentSong(randomSong);
     
@@ -62,7 +81,7 @@ export default function SongGuesser() {
         };
       }
     });
-  }, []);
+  };
 
   // Generate song suggestions based on user input
   useEffect(() => {
@@ -71,14 +90,27 @@ export default function SongGuesser() {
       return;
     }
     
-    const songTitles = Object.keys(audioLinks);
+    const songTitles = Object.keys(playlists[currentPlaylist]);
     const filtered = songTitles.filter(song => 
       song.toLowerCase().includes(userGuess.toLowerCase())
     ).slice(0, 5);
     
     setSuggestions(filtered);
-  }, [userGuess]);
+  }, [userGuess, currentPlaylist]);
 
+  useEffect(() => {
+    let timer;
+    if (isPlaying) {
+      timer = setInterval(() => {
+        setListeningDuration(prev => prev + 1);
+      }, 1000);
+    } else {
+      clearInterval(timer);
+    }
+    return () => clearInterval(timer);
+  }, [isPlaying]);
+  
+  
   const playStems = () => {
     if (isPlaying) {
       // Stop all active stems
@@ -137,17 +169,23 @@ export default function SongGuesser() {
   };
 
   const selectGuess = (selectedSong) => {
+    // Calculate time taken from start to guess
+    const currentTime = Date.now();
+    const secondsTaken = Math.floor((currentTime - startTime) / 1000);
+    
     // Save this guess to history
     const newGuess = {
       song: selectedSong,
       correct: selectedSong === currentSong,
-      stemCount: activeStems.length
+      stemCount: activeStems.length,
+      timeTaken: secondsTaken // Add time taken
     };
     
     setGuessHistory([...guessHistory, newGuess]);
     
     if (selectedSong === currentSong) {
-      setFeedback(`Correct! You guessed the song with ${activeStems.length} stem(s) revealed.`);
+      setTimeTaken(secondsTaken);
+      setFeedback(`Correct! You guessed the song in ${formatTime(secondsTaken)} with ${activeStems.length} stem(s) revealed.`);
       setGameOver(true);
     } else {
       const newAttemptsLeft = attemptsLeft - 1;
@@ -170,6 +208,13 @@ export default function SongGuesser() {
     setSuggestions([]);
   };
 
+  // Format time in minutes and seconds
+  const formatTime = (totalSeconds) => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   const resetGame = () => {
     // Stop all audio if playing
     stems.forEach(stem => {
@@ -179,10 +224,7 @@ export default function SongGuesser() {
       }
     });
     
-    const songTitles = Object.keys(audioLinks);
-    const randomSong = songTitles[Math.floor(Math.random() * songTitles.length)];
-    
-    setCurrentSong(randomSong);
+    setListeningDuration(0);
     setActiveStems(["bass"]);
     setUserGuess("");
     setFeedback("");
@@ -191,14 +233,19 @@ export default function SongGuesser() {
     setLoadErrors({});
     setGuessHistory([]);
     setAttemptsLeft(3);
+    setTimeTaken(0);
+    setStartTime(Date.now());
     
-    // Set up new audio sources
-    stems.forEach(stem => {
-      if (audioRefs[stem].current) {
-        const url = getStemUrl(randomSong, stem);
-        audioRefs[stem].current.src = url;
-      }
-    });
+    // Pick a new random song
+    pickRandomSong();
+  };
+
+  const changePlaylist = (playlistName) => {
+    setCurrentPlaylist(playlistName);
+    setShowPlaylistSelector(false);
+    
+    // Reset the game with the new playlist
+    resetGame();
   };
 
   const getProgressColor = (index) => {
@@ -211,10 +258,48 @@ export default function SongGuesser() {
   return (
     <div className="bg-gray-900 min-h-screen text-white p-4 font-sans sm:p-6 md:p-8 lg:p-12 xl:p-16">
       <div className="max-w-lg mx-auto">
-        <header className="border-b border-gray-700 pb-4 mb-6 flex items-center justify-center">
-          <Music size={24} className="text-emerald-500 mr-2" />
-          <h1 className="text-3xl font-bold text-center tracking-wide">Trackle</h1>
+        <header className="border-b border-gray-700 pb-4 mb-6 flex items-center justify-between">
+          <div className="flex items-center">
+            <Music size={24} className="text-emerald-500 mr-2" />
+            <h1 className="text-3xl font-bold tracking-wide">Trackle</h1>
+          </div>
+          
+          <div className="relative">
+            <button 
+              onClick={() => setShowPlaylistSelector(!showPlaylistSelector)} 
+              className="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <ListMusic size={20} className="text-emerald-500" />
+            </button>
+            
+            {showPlaylistSelector && (
+              <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-xl z-20 border border-gray-700">
+                <div className="p-2 text-sm text-gray-400 border-b border-gray-700">Select Playlist</div>
+                {Object.keys(playlists).map((playlist) => (
+                  <div 
+                    key={playlist}
+                    onClick={() => changePlaylist(playlist)}
+                    className={`px-4 py-2 hover:bg-gray-700 cursor-pointer ${currentPlaylist === playlist ? 'bg-gray-700 text-emerald-400' : ''}`}
+                  >
+                    {playlist.charAt(0).toUpperCase() + playlist.slice(1)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </header>
+        
+        {/* Game Stats */}
+        <div className="flex justify-between items-center mb-4">
+          <div className="text-sm">
+            <span className="text-gray-400">Playlist: </span>
+            <span className="text-emerald-400 font-medium">{currentPlaylist.charAt(0).toUpperCase() + currentPlaylist.slice(1)}</span>
+          </div>
+          <div className="text-sm">
+            <span className="text-gray-400">Time: </span>
+            <span className="text-emerald-400 font-medium">{formatTime(listeningDuration)}</span>
+          </div>
+        </div>
         
         {/* Game Progress Bar */}
         <div className="mb-8">
@@ -224,7 +309,7 @@ export default function SongGuesser() {
               {Array.from({length: attemptsLeft}, (_, i) => (
                 <div key={i} className="w-1 h-4 bg-emerald-600 rounded"></div>
               ))}
-              {Array.from({length: 6-attemptsLeft}, (_, i) => (
+              {Array.from({length: 3-attemptsLeft}, (_, i) => (
                 <div key={i} className="w-1 h-4 bg-gray-700 rounded"></div>
               ))}
             </div>
@@ -370,8 +455,8 @@ export default function SongGuesser() {
                     <span className={`w-2 h-2 rounded-full mr-3 ${guess.correct ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
                     <span>{guess.song}</span>
                   </div>
-                  <div className="flex items-center">
-                    <div className="flex gap-1 mr-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex gap-1">
                       {Array.from({length: guess.stemCount}, (_, i) => (
                         <div key={i} className="w-1.5 h-3 bg-emerald-600 rounded-sm"></div>
                       ))}
@@ -379,7 +464,7 @@ export default function SongGuesser() {
                         <div key={i} className="w-1.5 h-3 bg-gray-600 rounded-sm"></div>
                       ))}
                     </div>
-                    <span className="text-xs text-gray-400">{guess.stemCount}/{stems.length}</span>
+                    <span className="text-xs text-gray-400">{formatTime(guess.timeTaken)}</span>
                   </div>
                 </div>
               ))}
@@ -395,6 +480,7 @@ export default function SongGuesser() {
             <p>Start with just the bass, then reveal drums, other instruments, and vocals.</p>
             <p>The fewer stems you need to guess correctly, the better!</p>
             <p>You have 3 guesses before the game ends.</p>
+            <p>Switch between different playlists using the button in the top-right.</p>
           </div>
         </details>
       </div>
