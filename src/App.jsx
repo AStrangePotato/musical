@@ -151,18 +151,26 @@ export default function SongGuesser() {
     const nextStemIndex = activeStems.length;
     if (nextStemIndex < stems.length) {
       const nextStem = stems[nextStemIndex];
-      setActiveStems([...activeStems, nextStem]);
+      setActiveStems(prev => [...prev, nextStem]);
       
       // If playing, start the new stem too (if it's not errored)
       if (isPlaying && audioRefs[nextStem].current && !loadErrors[nextStem]) {
         // Find the first active stem that's playing to sync with
         const playingStem = activeStems.find(stem => !loadErrors[stem]);
         if (playingStem && audioRefs[playingStem].current) {
-          audioRefs[nextStem].current.currentTime = audioRefs[playingStem].current.currentTime;
-          audioRefs[nextStem].current.play().catch(err => {
-            console.error(`Error playing ${nextStem}:`, err);
-            setLoadErrors(prev => ({...prev, [nextStem]: true}));
-          });
+          const currentTime = audioRefs[playingStem].current.currentTime;
+          audioRefs[nextStem].current.currentTime = currentTime;
+          
+          // Make sure we properly handle the play promise
+          audioRefs[nextStem].current.play()
+            .then(() => {
+              // Successfully started playing
+              console.log(`Started playing ${nextStem} stem`);
+            })
+            .catch(err => {
+              console.error(`Error playing ${nextStem}:`, err);
+              setLoadErrors(prev => ({...prev, [nextStem]: true}));
+            });
         }
       }
     }
@@ -261,7 +269,7 @@ export default function SongGuesser() {
         <header className="border-b border-gray-700 pb-4 mb-6 flex items-center justify-between">
           <div className="flex items-center">
             <Music size={24} className="text-emerald-500 mr-2" />
-            <h1 className="text-3xl font-bold tracking-wide">Trackle</h1>
+            <h1 className="text-3xl font-bold tracking-wide">Traackle</h1>
           </div>
           
           <div className="relative">
